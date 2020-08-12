@@ -2,58 +2,61 @@ import numpy as np
 
 import RAMFeatures
 
-def buildTransitionMatrix(ale, actionSet, maxNumFrames, setOfTransitions, humanTrajectory):
 
-	# Required initializations
-	total_reward = 0.0
-	totalNumFrames = 0
-	listTransitions = []
-	prevFeatures = RAMFeatures.getRAMVector(ale)
+def buildTransitionMatrix(
+    ale, actionSet, maxNumFrames, setOfTransitions, humanTrajectory
+):
 
-	for i in xrange(len(humanTrajectory)):
-		for j in xrange(5): #I gathered the trajectory with a frame skip of 5
-			reward = ale.act(humanTrajectory[i])
-			total_reward += reward
-			# Obtaining real feature vector
-			currFeatures = RAMFeatures.getRAMVector(ale)
-			featureVector = currFeatures - prevFeatures
+    # Required initializations
+    total_reward = 0.0
+    totalNumFrames = 0
+    listTransitions = []
+    prevFeatures = RAMFeatures.getRAMVector(ale)
 
-			# If it is a new sample, we add it to our transitions matrix
-			prevSetSize  = len(setOfTransitions)
-			setOfTransitions.add(tuple(featureVector))
-			if len(setOfTransitions) != prevSetSize:
-				listTransitions.append(featureVector)
+    for i in range(len(humanTrajectory)):
+        for j in range(5):  # I gathered the trajectory with a frame skip of 5
+            reward = ale.act(humanTrajectory[i])
+            total_reward += reward
+            # Obtaining real feature vector
+            currFeatures = RAMFeatures.getRAMVector(ale)
+            featureVector = currFeatures - prevFeatures
 
-			# Bookkeeping
-			prevFeatures = currFeatures
-			prevSetSize = len(setOfTransitions)
+            # If it is a new sample, we add it to our transitions matrix
+            prevSetSize = len(setOfTransitions)
+            setOfTransitions.add(tuple(featureVector))
+            if len(setOfTransitions) != prevSetSize:
+                listTransitions.append(featureVector)
 
-	# Now I collect data on random walks:
-	while not ale.game_over():
-		# Random walk
-		a = actionSet[np.random.randint(actionSet.size)]
-		reward = ale.act(a);
+            # Bookkeeping
+            prevFeatures = currFeatures
+            prevSetSize = len(setOfTransitions)
 
-		# Bookkeeping
-		totalNumFrames += 1
-		total_reward += reward
+    # Now I collect data on random walks:
+    while not ale.game_over():
+        # Random walk
+        a = actionSet[np.random.randint(actionSet.size)]
+        reward = ale.act(a)
 
-		# Obtaining real feature vector
-		currFeatures = RAMFeatures.getRAMVector(ale)
-		featureVector = currFeatures - prevFeatures
+        # Bookkeeping
+        totalNumFrames += 1
+        total_reward += reward
 
-		# If it is a new sample, we add it to our transitions matrix
-		prevSetSize  = len(setOfTransitions)
-		setOfTransitions.add(tuple(featureVector))
-		if len(setOfTransitions) != prevSetSize:
-			listTransitions.append(featureVector)
+        # Obtaining real feature vector
+        currFeatures = RAMFeatures.getRAMVector(ale)
+        featureVector = currFeatures - prevFeatures
 
-		# Bookkeeping
-		prevFeatures = currFeatures
-		prevSetSize = len(setOfTransitions)
+        # If it is a new sample, we add it to our transitions matrix
+        prevSetSize = len(setOfTransitions)
+        setOfTransitions.add(tuple(featureVector))
+        if len(setOfTransitions) != prevSetSize:
+            listTransitions.append(featureVector)
 
-	print("Episode ended with score: " + str(total_reward))
-	ale.reset_game()
+        # Bookkeeping
+        prevFeatures = currFeatures
+        prevSetSize = len(setOfTransitions)
 
-	T = np.asarray(listTransitions)
-	return setOfTransitions, T
+    print(("Episode ended with score: " + str(total_reward)))
+    ale.reset_game()
+
+    T = np.asarray(listTransitions)
+    return setOfTransitions, T
